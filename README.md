@@ -1,5 +1,3 @@
-# Detecting-Fake-News-On-Social-Media
-
 ## Fake News Detection on Social Media:
 
 ### Overview:
@@ -15,9 +13,9 @@ When social media has become the most cost-efficient way of communication among 
 
 ### Goals:
 
-•	Guiding people on their thinking over false information.
-•	Identifying fake news over social media.
-•	Building a classifier to predict news as a Real or Fake.
+- Guiding people on their thinking over false information.
+- Identifying fake news over social media.
+- Building a classifier to predict news as a Real or Fake.
 
 ### Datasets I intend to use:
 
@@ -25,12 +23,12 @@ https://www.snopes.com/
 
 ### Data Science Pipeline:
 
-•	Data Collection : Balanced dataset can be crawled from snopes.
-•   Data Preparation
-•	Data Preprocess: Data Clean and Natural Language Process
-•	EDA and Feature Selection: LDA, sentiment analysis
-•   Model Selection
-•   Model Traning
-•   Inference
-•   Data Product
+-	Data Collection : Balanced dataset can be crawled from snopes.
+- Data Preparation
+-	Data Preprocess: Data Clean and Natural Language Process
+-	EDA and Feature Selection: LDA, sentiment analysis
+- Model Selection
+- Model Traning
+- Inference
+- Data Product
 
