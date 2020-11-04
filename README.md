@@ -8,8 +8,8 @@ During 2016 USA presidential election, one of the most escalating news was the o
 
 ### Motivation and Background:
 
-The extensive spread of fake information on social media.
-When social media has become the most cost-efficient way of communication among people, it is extremely intriguing to analyze people’s reactions to a popular news post while eliminating false information online. Therefore, designing a news monitor system that concentrates on the news content to alert the public about fake news.
+- The extensive spread of fake information on social media.
+- When social media has become the most cost-efficient way of communication among people, it is extremely intriguing to analyze people’s reactions to a popular news post while eliminating false information online. Therefore, designing a news monitor system that concentrates on the news content to alert the public about fake news.
 
 ### Goals:
 
