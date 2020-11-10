@@ -19,15 +19,28 @@ During 2016 USA presidential election, one of the most escalating news was the o
 
 ### Datasets I intend to use:
 
-https://www.snopes.com/
+https://arxiv.org/abs/1705.00648 [cs.CL]
 
 ### Data Science Pipeline:
 
--	Data Collection : Balanced dataset can be crawled from snopes.
+- Data Collection : Balanced dataset can be crawled from snopes.
 - Data Preparation
--	Data Preprocess: Data Clean and Natural Language Process
--	EDA and Feature Selection: LDA, sentiment analysis
+- Data Preprocess: Data Clean and Natural Language Process
+- EDA and Feature Selection: LDA, sentiment analysis
 - Model Selection
 - Model Traning
 - Inference
+- Model Deployment
 - Data Product
+
+### Some Practical Applications:
+
+- Social Media Websites (alerting Fake news)
+- To protect the nation's ecomonomy (For example, fake news claiming that Barack Obama, the 44th President of the United States, was injured in an explosion wiped out $130 billion in stock value [Rapoza 2017]. ) 
+- Survey of fake news
+
+
+### References
+
+- K Rapoza. 2017. Can âĂŸfake newsâĂŹ impact the stock market? (2017).
+
