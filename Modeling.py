@@ -20,6 +20,8 @@ import nltk
 import nltk.corpus 
 
 
+# ## LabelEncoding the target
+
 # In[2]:
 
 
@@ -59,11 +61,35 @@ train_label
 # 
 # 
 # 
-# #### Metric: 
+# ## Metric to use? 
 # 
+# I need to minimize false positives (number of fake news predicted as real) as it can -vely impact people by misleadling them. For class 0 i.e. 'fake', recall should be high as well as precision. Because we want our model to perform well on both classes (real & fake). In short, we need to maximize f1-score.
 # 
+# ### Cases I considered to choose metric?
+# 
+# **1. If I just care to about maximizing recall of class 0 (fake) or minimizing false positives (FP)?**
+# Well, in extreme case, what if all the news predicted by model are labelled as 'fake'. Recall will still be 1, but overall model is really bad i.e. not able to predict class 1 ('real'). 
+# 
+# Ex=> TN = 553, FP = 0, TP = 0, FN = 714
+# 
+# Class0-Recall = TN / (TN + FP) = 1
+# Class0-Precision = TN / (TN + FN) = 0.43
+# 
+# F1-Score = 2 * Class0-Recall * Class0-Precision/(Class0-Recall + Class0-Precision) = 0.60
+# 
+# Recall, Precision and F1-score for class 1 will be 0.
+# 
+# **2. Considering an extreme case, if all the news predicted are labelled as True. Even, fake news are predicted as True.**
+# 
+# Ex=>  TN = 0, FP = 553, TP = 714, FN =0
+# In that case, TN will be 0, which led to Precision 0, Recall 0 and F1 = 0 for class 0 ('fake').
+# 
+# For class 1, Class1-Recall = TP / (TP + FN) = 1
+# Class1-Precision = TP / (TP + FP) = 0.56
+# 
+# Hence, we care about model's performance in both classes i.e. precision and recall for both class 0 and class 1. 
 
-# In[21]:
+# In[44]:
 
 
 nb_clf_pipeline = Pipeline([('vect', feature_selection.count_vect),
@@ -74,25 +100,18 @@ nb_clf_pipeline.fit(Data_Preparation.train_news['statement'], train_label)
 predicted = nb_clf_pipeline.predict(Data_Preparation.test_news['statement'])
 print(np.mean(predicted == test_label))
 print(classification_report(test_label,predicted))
-
-
-# In[ ]:
-
-
-0.5864485981308412
-              precision    recall  f1-score   support
-
-           0       0.64      0.31      0.42       616
-           1       0.57      0.84      0.68       668
-
-    accuracy                           0.59      1284
-   macro avg       0.61      0.58      0.55      1284
-weighted avg       0.61      0.59      0.55      1284
+print(confusion_matrix(test_label,predicted))
 
 
 # ## logistic regression
+# 
+# How hypothesis makes prediction in logistics regression?
+# 
+# This algorithm uses sigmoid function(g(z)). If we want to predict if y=1 or y=0.
+# If estimated probability of y=1 is h(x)>=0.5 then the ouput is more likely to be "y=1" 
+# but if  h(x) < 0.5, the output is more likely to be is "y=0".
 
-# In[22]:
+# In[45]:
 
 
 logR_pipeline = Pipeline([
@@ -104,11 +123,12 @@ logR_pipeline.fit(Data_Preparation.train_news['statement'],train_label)
 predicted_LogR = logR_pipeline.predict(Data_Preparation.test_news['statement'])
 print(np.mean(predicted_LogR == test_label))
 print(classification_report(test_label,predicted_LogR))
+print(confusion_matrix(test_label,predicted_LogR))
 
 
 # ## SVM
 
-# In[23]:
+# In[46]:
 
 
 svm_pipeline = Pipeline([
@@ -120,11 +140,12 @@ svm_pipeline.fit(Data_Preparation.train_news['statement'],train_label)
 predicted_svm = svm_pipeline.predict(Data_Preparation.test_news['statement'])
 print(np.mean(predicted_svm == test_label))
 print(classification_report(test_label,predicted_svm))
+print(confusion_matrix(test_label,predicted_svm))
 
 
 # ## Random Forest
 
-# In[24]:
+# In[47]:
 
 
 random_forest = Pipeline([
@@ -135,7 +156,8 @@ random_forest = Pipeline([
 random_forest.fit(Data_Preparation.train_news['statement'],train_label)
 predicted_rf = random_forest.predict(Data_Preparation.test_news['statement'])
 print(np.mean(predicted_rf == test_label))
-print(classification_report(test_label,predicted_svm))
+print(classification_report(test_label,predicted_rf))
+print(confusion_matrix(test_label,predicted_rf))
 
 
 # ## Merging train, val and test data for K-Fold
