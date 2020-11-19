@@ -1,10 +1,9 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[2]:
+# In[1]:
 
 
-import Data_Preparation
 import pandas as pd
 import numpy as np
 import string
@@ -16,22 +15,29 @@ from sklearn.naive_bayes import MultinomialNB
 from sklearn.metrics import classification_report,confusion_matrix
 import nltk
 import nltk.corpus 
-from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
 nltk.download('stopwords')
 from nltk.stem.snowball import SnowballStemmer
 from gensim.models.word2vec import Word2Vec
 
 
+# In[2]:
+
+
+train_news = pd.read_csv('../data/processed/train.csv')
+val_news = pd.read_csv('../data/processed/val.csv')
+test_news = pd.read_csv('../data/processed/test.csv')
+
+
 # In[3]:
 
 
 print("====Label Distribution in Training Data ====")
-print(Data_Preparation.train_news['label'].value_counts())
+print(train_news['label'].value_counts())
 print("====Label Distribution in Validation Data ====")
-print(Data_Preparation.val_news['label'].value_counts())
+print(val_news['label'].value_counts())
 print("====Label Distribution in Test Data====")
-print(Data_Preparation.test_news['label'].value_counts())
+print(test_news['label'].value_counts())
 
 
 # By seeing the label's distribution, it seems like a balanced class. As number of 'True' and 'False' lables are kind of equally distributed in the dataset.
@@ -39,7 +45,7 @@ print(Data_Preparation.test_news['label'].value_counts())
 # In[4]:
 
 
-Data_Preparation.train_news.groupby('label').describe()
+train_news.groupby('label').describe()
 
 
 # from above information, we know that:
@@ -47,18 +53,18 @@ Data_Preparation.train_news.groupby('label').describe()
 # 1. About 44% of the statements are classified as a True.
 # 2. There are some duplicate messages, since the number of unique values lower than the count values of the text.
 
-# In the next part, lext check the length of each text messages to see whether it is correlated with the text classified as a spam or not.
+# In the next part, lext check the length of each text messages to see whether it is correlated with the text classified as a True or False.
 
 # In[5]:
 
 
-Data_Preparation.train_news['length'] = Data_Preparation.train_news['statement'].apply(len)
+train_news['length'] = train_news['statement'].apply(len)
 
 
 # In[6]:
 
 
-Data_Preparation.train_news.hist(column='length',by='label',bins=60, figsize=(15,6))
+train_news.hist(column='length',by='label',bins=60, figsize=(15,6))
 
 
 # from above figure, we can see almost both True and False statements have length under 500.
@@ -88,31 +94,36 @@ def process_text(text):
 # In[8]:
 
 
-Data_Preparation.train_news['statement'].apply(process_text).head()
+train_news['statement'].apply(process_text).head()
 
 
-# ### CountVectorizer : 
+# ## Feature Weighting
+# 
+# Not all words are equally important to a particular document / category. For example, while words like ‘murder’, ‘knife’ and ‘abduction’ are important to a crime related document, words like ‘news’ and ‘reporter’ may not be quite as important. 
+# 
+# ### Binary Weighting
+# The most basic form of feature weighting, is binary weighting. Where if a word is present in a document, the weight is ‘1’ and if the word is absent the weight is ‘0’. 
+# 
+# ### CountVectorizer
 # 
 # It Convert a collection of text documents to a matrix of token counts.
 # 
 # 
-# ### TfidfTransformer : 
+# ### Tfidf Weighting 
+# 
+# TF-IDF weighting where words that are unique to a particular document would have higher weights compared to words that are used commonly across documents. 
 # 
 # 1. TF (Term Frequency): The number of times a word appears in a document divded by the total number of words in the document. Every document has its own term frequency.
 # 
 # 2. IDF (Inverse Data Frequency): The log of the number of documents divided by the number of documents that contain the word w. Inverse data frequency determines the weight of rare words across all documents in the corpus.
 # 
 # 3. Lastly, the TF-IDF is simply the TF multiplied by IDF.
-# 
-# ### Stemming: 
-# 
-# From Wikipedia, stemming is the process of reducing inflected (or sometimes derived) words to their word stem, base or root form. E.g. A stemming algorithm reduces the words “fishing”, “fished”, and “fisher” to the root word, “fish”.
 
 # In[9]:
 
 
 count_vect = CountVectorizer(analyzer=process_text)
-X_train_counts = count_vect.fit_transform(Data_Preparation.train_news.statement)
+X_train_counts = count_vect.fit_transform(train_news.statement)
 X_train_counts.shape
 
 
@@ -137,4 +148,16 @@ X_train_tfidf.shape
 
 
 print(X_train_tfidf)
+
+
+# In[14]:
+
+
+count_vect.get_feature_names()
+
+
+# In[ ]:
+
+
+
 
