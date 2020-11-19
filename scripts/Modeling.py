@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[37]:
+# In[12]:
 
 
 import pandas as pd
@@ -29,7 +29,7 @@ from nltk.corpus import stopwords
 
 # ## Read Data
 
-# In[38]:
+# In[13]:
 
 
 train_news = pd.read_csv('../data/processed/train.csv')
@@ -37,24 +37,33 @@ val_news = pd.read_csv('../data/processed/val.csv')
 test_news = pd.read_csv('../data/processed/test.csv')
 
 
-# ## Merging train & val data for K-Fold
-
-# In[40]:
-
-
-frames = [train_news, val_news]
-train_val = pd.concat(frames)
-train_val['label'].value_counts()
-train_val['label'] = Encoder.fit_transform(train_val['label'])
-
-
-# In[41]:
+# In[14]:
 
 
 display(train_news), display(test_news), display(val_news)
 
 
-# In[43]:
+# ## Merging train & val data for K-Fold
+
+# In[15]:
+
+
+# Merging the training and validation data together, so that I can peroform k-fold cross validation 
+#and shuffle the data to reduce the bias
+labelEncoder = LabelEncoder()
+frames = [train_news, val_news]
+train_val = pd.concat(frames)
+train_val['label'].value_counts()
+train_val['label'] = labelEncoder.fit_transform(train_val['label'])
+
+
+# In[16]:
+
+
+train_val
+
+
+# In[17]:
 
 
 def process_text(text):
@@ -76,7 +85,7 @@ def process_text(text):
     return clean_words
 
 
-# In[7]:
+# In[18]:
 
 
 # count_vect = CountVectorizer(analyzer=process_text)
@@ -105,7 +114,7 @@ def process_text(text):
 # 
 # 3. Lastly, the TF-IDF is simply the TF multiplied by IDF.
 
-# In[44]:
+# In[50]:
 
 
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
@@ -119,10 +128,10 @@ def extract_features(field,training_data,testing_data,type):
         
         # BINARY FEATURE REPRESENTATION
         cv= CountVectorizer(binary=True, max_df=0.95)
-        cv.fit_transform(training_data[field].values)
+        cv.fit_transform(training_data.values)
         
-        train_feature_set=cv.transform(training_data[field].values)
-        test_feature_set=cv.transform(testing_data[field].values)
+        train_feature_set=cv.transform(training_data.values)
+        test_feature_set=cv.transform(testing_data.values)
         
         return train_feature_set,test_feature_set,cv
   
@@ -130,10 +139,10 @@ def extract_features(field,training_data,testing_data,type):
         
         # COUNT BASED FEATURE REPRESENTATION
         cv= CountVectorizer(binary=False, max_df=0.95)
-        cv.fit_transform(training_data[field].values)
+        cv.fit_transform(training_data.values)
         
-        train_feature_set=cv.transform(training_data[field].values)
-        test_feature_set=cv.transform(testing_data[field].values)
+        train_feature_set=cv.transform(training_data.values)
+        test_feature_set=cv.transform(testing_data.values)
         
         return train_feature_set,test_feature_set,cv
     
@@ -141,18 +150,21 @@ def extract_features(field,training_data,testing_data,type):
         
         # TF-IDF BASED FEATURE REPRESENTATION
         tfidf_vectorizer=TfidfVectorizer(use_idf=True, max_df=0.95)
-        tfidf_vectorizer.fit_transform(training_data[field].values)
+        tfidf_vectorizer.fit_transform(training_data.values)
         
-        train_feature_set=tfidf_vectorizer.transform(training_data[field].values)
-        test_feature_set=tfidf_vectorizer.transform(testing_data[field].values)
+        train_feature_set=tfidf_vectorizer.transform(training_data.values)
+        test_feature_set=tfidf_vectorizer.transform(testing_data.values)
         
         return train_feature_set,test_feature_set,tfidf_vectorizer
 
 
-# In[45]:
+# In[51]:
 
 
 def train_model(classifier, train_val, field="statement",feature_rep="binary",top_k=3):
+    """
+    Training the classifier for the provided features.
+    """
     
     logging.info("Starting model training...")
     
@@ -162,37 +174,40 @@ def train_model(classifier, train_val, field="statement",feature_rep="binary",to
     # GET A TRAIN TEST SPLIT (set seed for consistent results)
     training_data, testing_data = train_test_split(train_val,random_state = 2000,)
 
+    # features
+    X_train=training_data['statement']
+    X_test=testing_data['statement']
+    
     # GET LABELS
     Y_train=training_data['label'].values
     Y_test=testing_data['label'].values
      
     # GET FEATURES
-    X_train,X_test,feature_transformer=extract_features(field,training_data,testing_data,type=feature_rep)
+    train_features,test_features,feature_transformer=extract_features(field,X_train,X_test,type=feature_rep)
 
     # INIT LOGISTIC REGRESSION CLASSIFIER
     logging.info("Training a Classification Model...")
 #     scikit_log_reg = LogisticRegression(verbose=1, solver='liblinear',random_state=0, C=5, penalty='l2',max_iter=1000)
-    model=classifier.fit(X_train,Y_train)
+    model=classifier.fit(train_features,Y_train)
 
     # GET PREDICTIONS
-    predictions = model.predict(X_test)
+    predictions = model.predict(test_features)
     
     # GET EVALUATION NUMBERS ON TEST SET -- HOW DID WE DO?
     logging.info("Starting evaluation...")
-    confusion = confusion_matrix(Y_test,predictions)
     score = f1_score(Y_test,predictions)
-    report = classification_report(test_label,predicted)
-    
+    print(classification_report(Y_test,predictions))
+    print(confusion_matrix(Y_test,predictions))
     logging.info("Done training and evaluation.")
     
-    return model,feature_transformer,score,confusion,report
+    return model,feature_transformer,score
 
 
 # ## Metric
 # 
-# I need to minimize false positives (number of fake news predicted as real) as it can -vely impact people by misleadling them. For class 0 i.e. 'fake', recall should be high as well as precision. Because we want our model to perform well on both classes (real & fake). In short, we need to maximize f1-score.
+# I need to minimize false positives (number of fake news predicted as real news) as it can be very misleadling . For class 0 i.e. 'fake', recall should be high as well as precision. Because we want our model to perform well on both classes (real & fake). In short, we need to maximize f1-score.
 # 
-# ### Cases to be considered to choose the right metric
+# ### Cases I considered to choose the right metric
 # 
 # **1. Maximizing recall of class 0 (fake) or minimizing false positives(FP)?**
 # Well, in extreme case, what if all the news predicted by model are labelled as 'fake'. Recall will still be 1, but overall model is really bad i.e. not able to predict class 1 ('real'). 
@@ -217,8 +232,13 @@ def train_model(classifier, train_val, field="statement",feature_rep="binary",to
 # ## Model Training
 
 # ## Text Classification Algorithms
+# 
+# 1. Naive Bayes (NB)
+# 2. Logistics Regression
+# 3. SVM
+# 4. Random Forest
 
-# ## Naive Bayes Algorithm
+# ## Naive Bayes
 # 
 # Well, when assumption of independence holds, a Naive Bayes classifier performs better compare to other models like logistic regression and you need less training data. An advantage of naive Bayes is that it only requires a small number of training data to estimate the parameters necessary for classification. 
 # 
@@ -233,10 +253,14 @@ def train_model(classifier, train_val, field="statement",feature_rep="binary",to
 # Rather than attempting to calculate the probabilities of each attribute value, they are assumed to be conditionally independent given the class value.
 # 
 # This is a very strong assumption that is most unlikely in real data, i.e. that the attributes do not interact. Nevertheless, the approach performs surprisingly well on data where this assumption does not hold.
+# 
+# ### Multinomial NB
+# 
+# The multinomial Naive Bayes classifier is suitable for classification with discrete features (e.g., word counts for text classification). The multinomial distribution normally requires integer feature counts. However, in practice, fractional counts such as tf-idf may also work
 
-# ### Train Different Types of Models
+# ### Train Models with Different Types of Features
 
-# In[58]:
+# In[40]:
 
 
 # model,transformer,score,confusion,report=train_model(nb_clf, train_val,field=field,feature_rep=feature_rep)
@@ -247,13 +271,13 @@ nb_results=[]
 nb_clf = MultinomialNB()
 for feature_rep in feature_reps:
         print(f'Model - {feature_rep} features with statement')
-        model,transformer,score,confusion,report=train_model(nb_clf,train_val,field=field,feature_rep=feature_rep)
+        model,transformer,score=train_model(nb_clf,train_val,field=field,feature_rep=feature_rep)
         nb_results.append([field,feature_rep,score])
 
 
 # ### Naive Bayes Results of Various Models
 
-# In[59]:
+# In[41]:
 
 
 nb_df_results=pd.DataFrame(nb_results,columns=['text_fields','feature_representation','f1-score'])
@@ -276,56 +300,17 @@ nb_df_results.sort_values(by=['f1-score'],ascending=False)
 
 # ## logistic regression
 # 
-# How hypothesis makes prediction in logistics regression?
+# The underlying algorithm is also fairly easy to understand. More importantly, in the NLP world, it’s generally accepted that Logistic Regression is a great starter algorithm for text related classification (https://web.stanford.edu/~jurafsky/slp3/5.pdf). 
+# 
+# **How hypothesis makes prediction in logistics regression?**
 # 
 # This algorithm uses sigmoid function(g(z)). If we want to predict y=1 or y=0.
 # If estimated probability of y=1 is h(x)>=0.5 then the ouput is more likely to be "y=1" 
 # but if  h(x) < 0.5, the output is more likely to be is "y=0".
-# 
-# The underlying algorithm is also fairly easy to understand. More importantly, in the NLP world, it’s generally accepted that Logistic Regression is a great starter algorithm for text related classification (https://web.stanford.edu/~jurafsky/slp3/5.pdf). 
 
-# ### Train a Single Model
-# 
-# ### Model - 1 (binary features with statement)
+# ### Train Models with Different Types of Features¶
 
-# In[27]:
-
-
-field='statement'
-feature_rep='binary'
-LogR_clf = LogisticRegression(verbose=1, solver='liblinear',random_state=0, C=5, penalty='l2',max_iter=1000)
-
-model,transformer,score,confusion,report=train_model(LogR_clf, train_val,field=field,feature_rep=feature_rep)
-print("\nF1-score={0}; confusion={1}; classification_report={2}".format(score,confusion,report))
-
-
-# ### Model - 2 (counts features with statement)¶
-
-# In[31]:
-
-
-field='statement'
-feature_rep='counts'
-
-model,transformer,score,confusion=train_model(train_val,field=field,feature_rep=feature_rep)
-print("\nF1-score={0}; confusion={1}".format(score,confusion))
-
-
-# ### Model - 3 (tfidf features with statement)¶
-
-# In[30]:
-
-
-field='statement'
-feature_rep='tfidf'
-
-model,transformer,score,confusion=train_model(train_val,field=field,feature_rep=feature_rep)
-print("\nF1-score={0}; confusion={1}".format(score,confusion))
-
-
-# ### Train Different Types of Models
-
-# In[60]:
+# In[43]:
 
 
 field='statement'
@@ -335,13 +320,13 @@ LogR_clf = LogisticRegression(verbose=1, solver='liblinear',random_state=0, C=5,
 
 for feature_rep in feature_reps:
         print(f'Model - {feature_rep} features with statement')
-        model,transformer,score,confusion,report=train_model(LogR_clf,train_val,field=field,feature_rep=feature_rep)
+        model,transformer,score=train_model(LogR_clf,train_val,field=field,feature_rep=feature_rep)
         lr_results.append([field,feature_rep,score])
 
 
 # ### Logistics Regression Results of Various Models
 
-# In[61]:
+# In[44]:
 
 
 lr_df_results=pd.DataFrame(lr_results,columns=['text_fields','feature_representation','f1-score'])
@@ -356,9 +341,9 @@ lr_df_results.sort_values(by=['f1-score'],ascending=False)
 # 
 # So, when SVM determines the decision boundary we mentioned above, SVM decides where to draw the best “line” (or the best hyperplane) that divides the space into two subspaces: one for the vectors which belong to the given category and one for the vectors which do not belong to it.
 
-# ### Train Different Types of Models
+# ### Train Models with Different Types of Features¶
 
-# In[62]:
+# In[45]:
 
 
 field='statement'
@@ -368,13 +353,13 @@ svm_clf = svm.LinearSVC()
 
 for feature_rep in feature_reps:
         print(f'SVM Model - {feature_rep} features with statement')
-        model,transformer,score,confusion,report=train_model(svm_clf,train_val,field=field,feature_rep=feature_rep)
+        model,transformer,score=train_model(svm_clf,train_val,field=field,feature_rep=feature_rep)
         svm_results.append([field,feature_rep,score])
 
 
 # ### SVM Results of Various Models
 
-# In[63]:
+# In[46]:
 
 
 svm_df_results=pd.DataFrame(svm_results,columns=['text_fields','feature_representation','f1-score'])
@@ -387,9 +372,9 @@ svm_df_results.sort_values(by=['f1-score'],ascending=False)
 # 
 # However, keep in mind that in the case of text classification, a preprocessing phase is required to get either your TF or TF-IDF matrix, through which you have already made a selection of pertinent features. Potentially, all features are relevant in this matrix, so the random forest may be performant when you predict your outcome. (source: https://stats.stackexchange.com/questions/343954/random-forest-short-text-classification)
 
-# ### Train Different Types of Models
+# ### Train Models with Different Types of Features¶
 
-# In[65]:
+# In[47]:
 
 
 field='statement'
@@ -398,13 +383,13 @@ rf_results=[]
 rf_clf = RandomForestClassifier(n_estimators=1000)
 
 for feature_rep in feature_reps:
-        model,transformer,score,confusion,report=train_model(rf_clf,train_val,field=field,feature_rep=feature_rep)
+        model,transformer,score=train_model(rf_clf,train_val,field=field,feature_rep=feature_rep)
         rf_results.append([field,feature_rep,score])
 
 
-# ## RF Results of Various Models¶
+# ### RF Results of Various Models¶
 
-# In[66]:
+# In[49]:
 
 
 rf_df_results=pd.DataFrame(rf_results,columns=['text_fields','feature_representation','f1-score'])
@@ -412,13 +397,19 @@ rf_df_results.sort_values(by=['f1-score'],ascending=False)
 
 
 # ## K-fold cross validation
+# 
+# Cross-validation is a resampling procedure used to evaluate machine learning models on a limited data sample.
+# Cross-validation is primarily used in applied machine learning to estimate the skill of a machine learning model on unseen data. That is, to use a limited sample in order to estimate how the model is expected to perform in general when used to make predictions on data not used during the training of the model.
+# [credit: https://machinelearningmastery.com/k-fold-cross-validation/#:~:text=Cross%2Dvalidation%20is%20a%20resampling,on%20a%20limited%20data%20sample.&text=That%20is%2C%20to%20use%20a,the%20training%20of%20the%20model.]
 
-# In[19]:
+# In[52]:
 
 
-# cross validation with cat boost classification
-def apply_crossvalidation(classifier):
-
+# cross validation with text classification
+def apply_kfold(classifier,train_val,field,feature_rep):
+    """
+    K-fold cross validation on the the data
+    """
     k_fold = KFold(n_splits=5, shuffle=True)
     scores = []
     confusion = np.array([[0,0],[0,0]])
@@ -430,9 +421,14 @@ def apply_crossvalidation(classifier):
     
         valid_x = train_val['statement'].iloc[valid_index]
         valid_y = train_val['label'].iloc[valid_index]
-    
-        classifier.fit(train_x, train_y)
-        predictions = classifier.predict(valid_x)
+        
+        # GET FEATURES
+        train_features,val_features,feature_transformer=extract_features(field,train_x,valid_x,type=feature_rep)
+        
+        # INIT CLASSIFIER
+        logging.info("Training a Classification Model...")
+        classifier.fit(train_features, train_y)
+        predictions = classifier.predict(val_features)
         
         confusion += confusion_matrix(valid_y,predictions)
         score = f1_score(valid_y,predictions)
@@ -445,26 +441,26 @@ def apply_crossvalidation(classifier):
     print(confusion))
 
 
-# In[20]:
+# In[54]:
 
 
-apply_crossvalidation(nb_clf_pipeline)
+field='statement'
+feature_reps=['binary','counts','tfidf']
+nb_results=[]
+nb_clf = MultinomialNB()
+for feature_rep in feature_reps:
+        print(f'Model - {feature_rep} features with statement')
+        apply_kfold(nb_clf,train_val,field=field,feature_rep=feature_rep)
 
 
-# In[21]:
+# ## Grid-Search to select best hyperparameters
+# 
+# Grid search is designed with the notion that the loss function is affected by multiple hyper-parameter choices, hence we need to iterate through all the hyper parameter at some fix interval to assess all hyperparameters.
+# 
+# NB doesn't have any hyperparameters to tune.
+
+# In[ ]:
 
 
-apply_crossvalidation(logR_pipeline)
 
-
-# In[22]:
-
-
-apply_crossvalidation(svm_pipeline)
-
-
-# In[23]:
-
-
-apply_crossvalidation(random_forest)
 
