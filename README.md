@@ -38,6 +38,11 @@ https://arxiv.org/abs/1705.00648 [cs.CL]
 - To protect the nation's ecomonomy (For example, fake news claiming that Barack Obama, the 44th President of the United States, was injured in an explosion wiped out $130 billion in stock value [Rapoza 2017]. ) 
 - Survey of fake news
 
+### Libaries to install
+- `pip install requirements.txt`
+
+### Run the Flask Application
+- `python app.py`
 
 ### References
 
