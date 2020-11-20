@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[12]:
+# In[1]:
 
 
 import pandas as pd
@@ -29,7 +29,7 @@ from nltk.corpus import stopwords
 
 # ## Read Data
 
-# In[13]:
+# In[2]:
 
 
 train_news = pd.read_csv('../data/processed/train.csv')
@@ -37,7 +37,7 @@ val_news = pd.read_csv('../data/processed/val.csv')
 test_news = pd.read_csv('../data/processed/test.csv')
 
 
-# In[14]:
+# In[3]:
 
 
 display(train_news), display(test_news), display(val_news)
@@ -45,7 +45,7 @@ display(train_news), display(test_news), display(val_news)
 
 # ## Merging train & val data for K-Fold
 
-# In[15]:
+# In[4]:
 
 
 # Merging the training and validation data together, so that I can peroform k-fold cross validation 
@@ -57,13 +57,13 @@ train_val['label'].value_counts()
 train_val['label'] = labelEncoder.fit_transform(train_val['label'])
 
 
-# In[16]:
+# In[5]:
 
 
 train_val
 
 
-# In[17]:
+# In[6]:
 
 
 def process_text(text):
@@ -85,7 +85,7 @@ def process_text(text):
     return clean_words
 
 
-# In[18]:
+# In[7]:
 
 
 # count_vect = CountVectorizer(analyzer=process_text)
@@ -114,7 +114,7 @@ def process_text(text):
 # 
 # 3. Lastly, the TF-IDF is simply the TF multiplied by IDF.
 
-# In[50]:
+# In[8]:
 
 
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
@@ -158,7 +158,7 @@ def extract_features(field,training_data,testing_data,type):
         return train_feature_set,test_feature_set,tfidf_vectorizer
 
 
-# In[51]:
+# In[9]:
 
 
 def train_model(classifier, train_val, field="statement",feature_rep="binary",top_k=3):
@@ -260,7 +260,7 @@ def train_model(classifier, train_val, field="statement",feature_rep="binary",to
 
 # ### Train Models with Different Types of Features
 
-# In[40]:
+# In[10]:
 
 
 # model,transformer,score,confusion,report=train_model(nb_clf, train_val,field=field,feature_rep=feature_rep)
@@ -271,13 +271,13 @@ nb_results=[]
 nb_clf = MultinomialNB()
 for feature_rep in feature_reps:
         print(f'Model - {feature_rep} features with statement')
-        model,transformer,score=train_model(nb_clf,train_val,field=field,feature_rep=feature_rep)
+        nb_model,transformer,score=train_model(nb_clf,train_val,field=field,feature_rep=feature_rep)
         nb_results.append([field,feature_rep,score])
 
 
 # ### Naive Bayes Results of Various Models
 
-# In[41]:
+# In[11]:
 
 
 nb_df_results=pd.DataFrame(nb_results,columns=['text_fields','feature_representation','f1-score'])
@@ -310,7 +310,7 @@ nb_df_results.sort_values(by=['f1-score'],ascending=False)
 
 # ### Train Models with Different Types of Features¶
 
-# In[43]:
+# In[12]:
 
 
 field='statement'
@@ -320,13 +320,13 @@ LogR_clf = LogisticRegression(verbose=1, solver='liblinear',random_state=0, C=5,
 
 for feature_rep in feature_reps:
         print(f'Model - {feature_rep} features with statement')
-        model,transformer,score=train_model(LogR_clf,train_val,field=field,feature_rep=feature_rep)
+        lr_model,transformer,score=train_model(LogR_clf,train_val,field=field,feature_rep=feature_rep)
         lr_results.append([field,feature_rep,score])
 
 
 # ### Logistics Regression Results of Various Models
 
-# In[44]:
+# In[13]:
 
 
 lr_df_results=pd.DataFrame(lr_results,columns=['text_fields','feature_representation','f1-score'])
@@ -343,7 +343,7 @@ lr_df_results.sort_values(by=['f1-score'],ascending=False)
 
 # ### Train Models with Different Types of Features¶
 
-# In[45]:
+# In[14]:
 
 
 field='statement'
@@ -353,13 +353,13 @@ svm_clf = svm.LinearSVC()
 
 for feature_rep in feature_reps:
         print(f'SVM Model - {feature_rep} features with statement')
-        model,transformer,score=train_model(svm_clf,train_val,field=field,feature_rep=feature_rep)
+        svm_model,transformer,score=train_model(svm_clf,train_val,field=field,feature_rep=feature_rep)
         svm_results.append([field,feature_rep,score])
 
 
 # ### SVM Results of Various Models
 
-# In[46]:
+# In[15]:
 
 
 svm_df_results=pd.DataFrame(svm_results,columns=['text_fields','feature_representation','f1-score'])
@@ -374,7 +374,7 @@ svm_df_results.sort_values(by=['f1-score'],ascending=False)
 
 # ### Train Models with Different Types of Features¶
 
-# In[47]:
+# In[16]:
 
 
 field='statement'
@@ -383,13 +383,13 @@ rf_results=[]
 rf_clf = RandomForestClassifier(n_estimators=1000)
 
 for feature_rep in feature_reps:
-        model,transformer,score=train_model(rf_clf,train_val,field=field,feature_rep=feature_rep)
+        rf_model,transformer,score=train_model(rf_clf,train_val,field=field,feature_rep=feature_rep)
         rf_results.append([field,feature_rep,score])
 
 
 # ### RF Results of Various Models¶
 
-# In[49]:
+# In[17]:
 
 
 rf_df_results=pd.DataFrame(rf_results,columns=['text_fields','feature_representation','f1-score'])
@@ -398,14 +398,12 @@ rf_df_results.sort_values(by=['f1-score'],ascending=False)
 
 # ## K-fold cross validation
 # 
-# Cross-validation is a resampling procedure used to evaluate machine learning models on a limited data sample.
-# Cross-validation is primarily used in applied machine learning to estimate the skill of a machine learning model on unseen data. That is, to use a limited sample in order to estimate how the model is expected to perform in general when used to make predictions on data not used during the training of the model.
-# [credit: https://machinelearningmastery.com/k-fold-cross-validation/#:~:text=Cross%2Dvalidation%20is%20a%20resampling,on%20a%20limited%20data%20sample.&text=That%20is%2C%20to%20use%20a,the%20training%20of%20the%20model.]
+# With K-fold cross validation, you are testing how well your model is able to get trained by some data and then predict data it hasn't seen. We use cross validation for this because if you train using all the data you have, you have none left for testing. You could do this once, say by using 80% of the data to train and 20% to test, but what if the 20% you happened to pick to test happens to contain a bunch of points that are particularly easy (or particularly hard) to predict? We will not have come up with the best estimate possible of the models ability to learn and predict.
 
-# In[52]:
+# In[22]:
 
 
-# cross validation with text classification
+#User defined functon for K-Fold cross validatoin
 def apply_kfold(classifier,train_val,field,feature_rep):
     """
     K-fold cross validation on the the data
@@ -441,6 +439,8 @@ def apply_kfold(classifier,train_val,field,feature_rep):
     print(confusion))
 
 
+# ## Naive Bayes with K-fold cross validation
+
 # In[54]:
 
 
@@ -453,11 +453,61 @@ for feature_rep in feature_reps:
         apply_kfold(nb_clf,train_val,field=field,feature_rep=feature_rep)
 
 
-# ## Grid-Search to select best hyperparameters
+# ## Logistics Regression with K-fold cross Validation
+
+# In[19]:
+
+
+field='statement'
+feature_reps=['binary','counts','tfidf']
+LogR_clf = LogisticRegression(verbose=1, solver='liblinear',random_state=0, C=5, penalty='l2',max_iter=1000)
+
+for feature_rep in feature_reps:
+        print(f'Model - {feature_rep} features with statement')
+        apply_kfold(LogR_clf,train_val,field=field,feature_rep=feature_rep)
+
+
+# ## SVM with K-fold cross Validation
+
+# In[20]:
+
+
+field='statement'
+feature_reps=['binary','counts','tfidf']
+svm_clf = svm.LinearSVC()
+
+for feature_rep in feature_reps:
+        print(f'Model - {feature_rep} features with statement')
+        apply_kfold(svm_clf,train_val,field=field,feature_rep=feature_rep)
+
+
+# ## RF with K-fold cross Validation
+
+# In[21]:
+
+
+field='statement'
+feature_reps=['binary','counts','tfidf']
+rf_clf = RandomForestClassifier(n_estimators=1000)
+
+for feature_rep in feature_reps:
+        print(f'Model - {feature_rep} features with statement')
+        apply_kfold(rf_clf,train_val,field=field,feature_rep=feature_rep)
+
+
+# ## Best Model Selection
+
+# """
+# Out of all the models fitted, we would take 2 best performing model. we would call them candidate models
+# from the confusion matrix, we can see that random forest and logistic regression are best performing 
+# in terms of precision and recall (take a look into false positive and true negative counts which appeares
+# to be low compared to rest of the models)
+# """
 # 
-# Grid search is designed with the notion that the loss function is affected by multiple hyper-parameter choices, hence we need to iterate through all the hyper parameter at some fix interval to assess all hyperparameters.
-# 
-# NB doesn't have any hyperparameters to tune.
+# As of now, Logistics Regression(LR) is performing better than other models with counts features.
+# Because it has more TN (accurate predictions for fake class) and less FP than other models.
+
+# ## Train the final Model
 
 # In[ ]:
 
