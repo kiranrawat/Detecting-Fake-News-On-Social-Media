@@ -42,7 +42,8 @@ https://arxiv.org/abs/1705.00648 [cs.CL]
 - `pip install requirements.txt`
 
 ### Run the Flask Application
-- `python app.py`
+Start flask web server: `python app.py`
+The server will start on the address http://127.0.0.1:5000 [if port 5000 is not occupied]
 
 ### References
 
