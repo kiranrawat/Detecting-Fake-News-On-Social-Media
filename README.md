@@ -23,15 +23,14 @@ https://arxiv.org/abs/1705.00648 [cs.CL]
 
 ### Data Science Pipeline:
 
-- Data Collection : Balanced dataset can be crawled from snopes.
-- Data Preparation
+- Data Collection : Balanced dataset collected from politifact.
 - Data Preprocess: Data Clean and Natural Language Process
-- EDA and Feature Selection: LDA, sentiment analysis
-- Model Selection
-- Model Traning
-- Inference
-- Model Deployment
-- Data Product
+- EDA and Feature Selection : Binary, CountVectorizer, TFIDF
+- Model Selection : Naive Bayes, Logistics Regression, SVM, RF
+- Model Training  : Scikit-Learn
+- Inference : F1-Score and Confusion matrix to make an inference
+- Model Deployment : Deployment on AWS or heroku
+- Data Product : Flask-based web application
 
 ### Some Practical Applications:
 
@@ -43,4 +42,5 @@ https://arxiv.org/abs/1705.00648 [cs.CL]
 ### References
 
 - K Rapoza. 2017. Can âĂŸfake newsâĂŹ impact the stock market? (2017).
+- https://kavita-ganesan.com/news-classifier-with-logistic-regression-in-python/#.X7XeFBNKhQK
 
