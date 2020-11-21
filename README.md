@@ -39,7 +39,7 @@ https://arxiv.org/abs/1705.00648 [cs.CL]
 - Survey of fake news
 
 ### Libaries to install
-- `pip install requirements.txt`
+- `pip install -r requirements.txt`
 
 ### Run the Flask Application
 Start flask web server: `python app.py`
