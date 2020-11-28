@@ -10,17 +10,18 @@ from sklearn.feature_extraction.text import CountVectorizer
 app = Flask(__name__)
 Bootstrap(app)
 
+model_path="models/lr_final_model.pkl"
+transformer_path="models/transformer.pkl"
+# load the model and feature transformer with pickle
+loaded_model = pickle.load(open(model_path, 'rb'))
+loaded_transformer = pickle.load(open(transformer_path, 'rb'))
+
 @app.route('/')
 def index():
     return render_template('index.html')
         
 @app.route('/predict', methods=['POST'])
 def predict():
-    model_path="models/lr_final_model.pkl"
-    transformer_path="models/transformer.pkl"
-    # load the model and feature transformer with pickle
-    loaded_model = pickle.load(open(model_path, 'rb'))
-    loaded_transformer = pickle.load(open(transformer_path, 'rb'))
     # Collect the input and predict the outcome
     if request.method == 'POST':
         namequery = request.form['namequery']
