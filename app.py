@@ -10,6 +10,7 @@ from sklearn.feature_extraction.text import CountVectorizer
 app = Flask(__name__)
 Bootstrap(app)
 
+# define the path for model and feature transformer
 model_path="models/lr_final_model.pkl"
 transformer_path="models/transformer.pkl"
 # load the model and feature transformer with pickle
