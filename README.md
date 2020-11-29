@@ -1,3 +1,5 @@
+![](https://img.shields.io/github/repo-size/kiranrawat/Detecting-Fake-News-On-Social-Media)
+
 ## Fake News Detection on Social Media:
 
 ### Overview:
