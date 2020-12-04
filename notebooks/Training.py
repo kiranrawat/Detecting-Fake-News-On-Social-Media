@@ -1,19 +1,23 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[1]:
+# # Import necessary dependencies and settings
+
+# In[18]:
 
 
 import pandas as pd
 import numpy as np
 import string
 import logging
+import re
 
 from sklearn.preprocessing import LabelEncoder
-from sklearn.feature_extraction.text import CountVectorizer,TfidfVectorizer,TfidfTransformer
+from sklearn.feature_extraction.text import CountVectorizer,TfidfVectorizer
 
 from sklearn.pipeline import Pipeline
 from sklearn.naive_bayes import MultinomialNB
+
 from sklearn.linear_model import  LogisticRegression
 from sklearn import svm
 from sklearn.ensemble import RandomForestClassifier
@@ -22,74 +26,62 @@ from sklearn.metrics import classification_report, confusion_matrix, f1_score
 from sklearn.model_selection import KFold
 from sklearn.metrics import precision_recall_fscore_support
 
+from skopt import BayesSearchCV
+from skopt.callbacks import DeadlineStopper, VerboseCallback, DeltaXStopper
+
 import nltk
-import nltk.corpus 
 from nltk.corpus import stopwords
 
+#import python scripts to use user_defined functions
+import sys
+sys.path.append("/Users/kiranrawat/Desktop/Personal Projects/Detecting-Fake-News-On-Social-Media/src")
+from cleaning import process_text
+from training import extract_features, train_model, extract_final_features, train_final_model  
+from prediction import get_predictions
 
-# ## Read Data
 
-# In[23]:
+# # Loading the Data
+
+# In[9]:
 
 
-train_news = pd.read_csv('../data/processed/train.csv')
+train_news = pd.read_csv('../data/processed/train.csv').drop('len', axis=1)
 val_news = pd.read_csv('../data/processed/val.csv')
-test_news = pd.read_csv('../data/processed/test.csv')
+test_news = pd.read_csv('../data/processed/test.csv').drop('len', axis=1)
 
 
-# In[24]:
+# In[10]:
 
 
-display(train_news), display(test_news), display(val_news)
+train_news.head()
+
+
+# In[13]:
+
+
+display(train_news), display(val_news), display(test_news)
 
 
 # ## Merging train & val data for K-Fold
 
-# In[25]:
+# In[14]:
 
 
-# Merging the training and validation data together, so that I can peroform k-fold cross validation 
-#and shuffle the data to reduce the bias
+"""
+Merging the training and validation data together, so that I can peroform k-fold cross validation 
+and shuffle the data to reduce the bias.
+"""
 labelEncoder = LabelEncoder()
-frames = [train_news, val_news, test_news]
+frames = [train_news, val_news]
 train_val = pd.concat(frames)
 train_val['label'].value_counts()
 train_val['label'] = labelEncoder.fit_transform(train_val['label'])
 
 
-# In[26]:
+# In[15]:
 
 
 train_val
-
-
-# In[27]:
-
-
-def process_text(text):
-    '''
-    What will be covered:
-    1. Remove punctuation
-    2. Remove stopwords
-    3. Return list of clean text words
-    '''
-    
-    #1
-    nopunc = [char for char in text if char not in string.punctuation]
-    nopunc = ''.join(nopunc)
-    
-    #2
-    clean_words = [word for word in nopunc.split() if word.lower() not in stopwords.words('english')]
-    
-    #3
-    return clean_words
-
-
-# In[28]:
-
-
-# count_vect = CountVectorizer(analyzer=process_text)
-# tfidf_transformer = TfidfTransformer()
 
 
 # ## Feature Weighting
@@ -113,95 +105,6 @@ def process_text(text):
 # 2. IDF (Inverse Data Frequency): The log of the number of documents divided by the number of documents that contain the word w. Inverse data frequency determines the weight of rare words across all documents in the corpus.
 # 
 # 3. Lastly, the TF-IDF is simply the TF multiplied by IDF.
-
-# In[29]:
-
-
-logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
-
-def extract_features(field,training_data,testing_data,type):
-    """Extract features using different methods"""
-    
-    logging.info("Extracting features and creating vocabulary...")
-    
-    if "binary" in type:
-        
-        # BINARY FEATURE REPRESENTATION
-        cv= CountVectorizer(binary=True, max_df=0.95)
-        cv.fit_transform(training_data.values)
-        
-        train_feature_set=cv.transform(training_data.values)
-        test_feature_set=cv.transform(testing_data.values)
-        
-        return train_feature_set,test_feature_set,cv
-  
-    elif "counts" in type:
-        
-        # COUNT BASED FEATURE REPRESENTATION
-        cv= CountVectorizer(binary=False, max_df=0.95)
-        cv.fit_transform(training_data.values)
-        
-        train_feature_set=cv.transform(training_data.values)
-        test_feature_set=cv.transform(testing_data.values)
-        
-        return train_feature_set,test_feature_set,cv
-    
-    else:    
-        
-        # TF-IDF BASED FEATURE REPRESENTATION
-        tfidf_vectorizer=TfidfVectorizer(use_idf=True, max_df=0.95)
-        tfidf_vectorizer.fit_transform(training_data.values)
-        
-        train_feature_set=tfidf_vectorizer.transform(training_data.values)
-        test_feature_set=tfidf_vectorizer.transform(testing_data.values)
-        
-        return train_feature_set,test_feature_set,tfidf_vectorizer
-
-
-# In[31]:
-
-
-def train_model(classifier, train_val, field="statement",feature_rep="binary"):
-    """
-    Training the classifier for the provided features.
-    """
-    
-    logging.info("Starting model training...")
-    
-    scores = []
-    confusion = np.array([[0,0],[0,0]])
-    
-    # GET A TRAIN TEST SPLIT (set seed for consistent results)
-    training_data, testing_data = train_test_split(train_val,random_state = 2000,)
-
-    # features
-    X_train=training_data['statement']
-    X_test=testing_data['statement']
-    
-    # GET LABELS
-    Y_train=training_data['label'].values
-    Y_test=testing_data['label'].values
-     
-    # GET FEATURES
-    train_features,test_features,feature_transformer=extract_features(field,X_train,X_test,type=feature_rep)
-
-    # INIT LOGISTIC REGRESSION CLASSIFIER
-    logging.info("Training a Classification Model...")
-#     scikit_log_reg = LogisticRegression(verbose=1, solver='liblinear',random_state=0, C=5, penalty='l2',max_iter=1000)
-    model=classifier.fit(train_features,Y_train)
-
-    # GET PREDICTIONS
-    predictions = model.predict(test_features)
-    
-    # GET EVALUATION NUMBERS ON TEST SET -- HOW DID WE DO?
-    logging.info("Starting evaluation...")
-    score = f1_score(Y_test,predictions)
-    print(classification_report(Y_test,predictions))
-    print(confusion_matrix(Y_test,predictions))
-    logging.info("Done training and evaluation.")
-    
-    return model,feature_transformer,score
-
 
 # ## Metric
 # 
@@ -260,7 +163,7 @@ def train_model(classifier, train_val, field="statement",feature_rep="binary"):
 
 # ### Train Models with Different Types of Features
 
-# In[32]:
+# In[17]:
 
 
 # model,transformer,score,confusion,report=train_model(nb_clf, train_val,field=field,feature_rep=feature_rep)
@@ -277,25 +180,11 @@ for feature_rep in feature_reps:
 
 # ### Naive Bayes Results of Various Models
 
-# In[34]:
+# In[19]:
 
 
 nb_df_results=pd.DataFrame(nb_results,columns=['text_fields','feature_representation','f1-score'])
 nb_df_results.sort_values(by=['f1-score'],ascending=False)
-
-
-# In[36]:
-
-
-# nb_clf_pipeline = Pipeline([('vect', count_vect),
-#                       ('tfidf', tfidf_transformer),
-#                       ('nb_clf', MultinomialNB()),
-#  ])
-# nb_clf_pipeline.fit(train_news['statement'], train_label)
-# predicted = nb_clf_pipeline.predict(test_news['statement'])
-# print(np.mean(predicted == test_label))
-# print(classification_report(test_label,predicted))
-# print(confusion_matrix(test_label,predicted))
 
 
 # ## logistic regression
@@ -310,7 +199,7 @@ nb_df_results.sort_values(by=['f1-score'],ascending=False)
 
 # ### Train Models with Different Types of Features¶
 
-# In[35]:
+# In[21]:
 
 
 field='statement'
@@ -326,7 +215,7 @@ for feature_rep in feature_reps:
 
 # ### Logistics Regression Results of Various Models
 
-# In[36]:
+# In[22]:
 
 
 lr_df_results=pd.DataFrame(lr_results,columns=['text_fields','feature_representation','f1-score'])
@@ -343,7 +232,7 @@ lr_df_results.sort_values(by=['f1-score'],ascending=False)
 
 # ### Train Models with Different Types of Features¶
 
-# In[37]:
+# In[23]:
 
 
 field='statement'
@@ -359,7 +248,7 @@ for feature_rep in feature_reps:
 
 # ### SVM Results of Various Models
 
-# In[38]:
+# In[24]:
 
 
 svm_df_results=pd.DataFrame(svm_results,columns=['text_fields','feature_representation','f1-score'])
@@ -374,7 +263,7 @@ svm_df_results.sort_values(by=['f1-score'],ascending=False)
 
 # ### Train Models with Different Types of Features¶
 
-# In[39]:
+# In[25]:
 
 
 field='statement'
@@ -389,7 +278,7 @@ for feature_rep in feature_reps:
 
 # ### RF Results of Various Models¶
 
-# In[40]:
+# In[26]:
 
 
 rf_df_results=pd.DataFrame(rf_results,columns=['text_fields','feature_representation','f1-score'])
@@ -400,7 +289,7 @@ rf_df_results.sort_values(by=['f1-score'],ascending=False)
 # 
 # With K-fold cross validation, you are testing how well your model is able to get trained by some data and then predict data it hasn't seen. We use cross validation for this because if you train using all the data you have, you have none left for testing. You could do this once, say by using 80% of the data to train and 20% to test, but what if the 20% you happened to pick to test happens to contain a bunch of points that are particularly easy (or particularly hard) to predict? We will not have come up with the best estimate possible of the models ability to learn and predict.
 
-# In[41]:
+# In[30]:
 
 
 #User defined functon for K-Fold cross validatoin
@@ -439,9 +328,40 @@ def apply_kfold(classifier,train_val,field,feature_rep):
     print(confusion))
 
 
+# ## Grid Search Hyperparameters
+
+# In[31]:
+
+
+# from sklearn.svm import SVC
+# from sklearn.model_selection import StratifiedKFold
+# from skopt import BayesSearchCV
+
+# field='statement'
+# feature_reps=['binary','counts','tfidf']
+# # GET FEATURES
+# train_features,feature_transformer=extract_final_features('statement',train_val['statement'],type='binary')
+    
+# # define search space
+# params = dict()
+# params['C'] = (1e-6, 100.0, 'log-uniform')
+# params['gamma'] = (1e-6, 100.0, 'log-uniform')
+# params['degree'] = (1,5)
+# params['kernel'] = ['linear', 'poly', 'rbf', 'sigmoid']
+# # define evaluation
+# cv = StratifiedKFold(n_splits=5, random_state=1)
+# # define the search
+# search = BayesSearchCV(estimator=SVC(), search_spaces=params, n_jobs=-1, cv=cv)
+# # perform the search
+# search.fit(train_features, train_val['label'])
+# # report the best result
+# print(search.best_score_)
+# print(search.best_params_)
+
+
 # ## Naive Bayes with K-fold cross validation
 
-# In[42]:
+# In[32]:
 
 
 field='statement'
@@ -455,7 +375,7 @@ for feature_rep in feature_reps:
 
 # ## Logistics Regression with K-fold cross Validation
 
-# In[43]:
+# In[33]:
 
 
 field='statement'
@@ -469,7 +389,7 @@ for feature_rep in feature_reps:
 
 # ## SVM with K-fold cross Validation
 
-# In[46]:
+# In[ ]:
 
 
 field='statement'
@@ -483,7 +403,7 @@ for feature_rep in feature_reps:
 
 # ## RF with K-fold cross Validation
 
-# In[45]:
+# In[ ]:
 
 
 field='statement'
@@ -506,90 +426,7 @@ for feature_rep in feature_reps:
 # Using k-fold cross validation, we see the performance of the models on the entire dataset. And, the model's aren't performing well. We can apply other features to improve the performance, and grid-search can also help us to find best parameters to improve the perfromance.
 # """
 
-# ## Train the best Model on entire dataset
-
-# In[47]:
-
-
-logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
-
-def extract_final_features(field,training_data,type):
-    """Extract features using different methods"""
-    
-    logging.info("Extracting features and creating vocabulary...")
-    
-    if "binary" in type:
-        
-        # BINARY FEATURE REPRESENTATION
-        cv= CountVectorizer(binary=True, max_df=0.95)
-        cv.fit_transform(training_data.values)
-        
-        train_feature_set=cv.transform(training_data.values)
-        
-        return train_feature_set,cv
-  
-    elif "counts" in type:
-        
-        # COUNT BASED FEATURE REPRESENTATION
-        cv= CountVectorizer(binary=False, max_df=0.95)
-        cv.fit_transform(training_data.values)
-        
-        train_feature_set=cv.transform(training_data.values)
-        
-        return train_feature_set,cv
-    
-    else:    
-        
-        # TF-IDF BASED FEATURE REPRESENTATION
-        tfidf_vectorizer=TfidfVectorizer(use_idf=True, max_df=0.95)
-        tfidf_vectorizer.fit_transform(training_data.values)
-        
-        train_feature_set=tfidf_vectorizer.transform(training_data.values)
-        
-        return train_feature_set,tfidf_vectorizer
-
-
-# In[50]:
-
-
-def train_final_model(classifier, train_val, field="statement",feature_rep="binary"):
-    """
-    Training the best classifier on entire dataset for the provided features.
-    """
-    
-    logging.info("Starting model training...")    
-
-    # features
-    train_x=train_val['statement']
-    
-    # GET LABELS
-    target=train_val['label'].values
-     
-    # GET FEATURES
-    features,feature_transformer=extract_final_features(field,train_x,type=feature_rep)
-
-    # INIT LOGISTIC REGRESSION CLASSIFIER
-    logging.info("Training a Final Model...")
-#     scikit_log_reg = LogisticRegression(verbose=1, solver='liblinear',random_state=0, C=5, penalty='l2',max_iter=1000)
-    model=classifier.fit(features,target)
-
-    logging.info("Done training.")
-    
-    return model,feature_transformer
-
-
-# In[57]:
-
-
-def get_predictions(model,X_test):
-    
-    # get predicted labels
-    pred = model.predict(X_test)
-    
-    return pred
-
-
-# In[51]:
+# In[ ]:
 
 
 field='statement'
@@ -599,37 +436,33 @@ lr_final_model,transformer=train_final_model(LogR_clf_final,train_val,field=fiel
 
 # ## Check predictions on unseen data
 
-# In[64]:
+# In[ ]:
 
 
-# https://www.snopes.com/fact-check/alaska-town-60-days-without-sun/
-test_features=transformer.transform(["The sun does not rise in Utqiagvik, Alaska, for more than 60 days during the winter."])
+test_features=transformer.transform(["When asked by a reporter whether hes at the center of a criminal scheme to violate campaign laws, Gov. Scott Walker nodded yes."])
 ouput = get_predictions(lr_final_model,test_features)
+ouput[0] # correctly predicted
 
 
-# In[65]:
+# In[ ]:
 
 
-ouput[0]
-
-
-# In[66]:
-
-
-# https://www.politifact.com/factchecks/2020/nov/20/viral-image/no-passage-about-defeat-isnt-donald-trumps-art-dea/
-test_features=transformer.transform(["Says Donald Trump’s book “The Art of the Deal” advises: “Never admit defeat. You win. If you don’t win, claim they cheated.”"])
+test_features=transformer.transform(["Says John McCain has done nothing to help the vets."])
 ouput = get_predictions(lr_final_model,test_features)
+ouput[0] # false news predicted as false. #correct prediction
 
 
-# In[74]:
+# In[ ]:
 
 
-ouput[0] # this information is predicted as true, however, it should be false
+test_features=transformer.transform(["Says that Tennessee law requires that schools receive half of proceeds -- $31 million per year -- from a half-cent increase in the Shelby County sales tax."])
+ouput = get_predictions(lr_final_model,test_features)
+ouput[0] # True news predicted as True. #correct prediction
 
 
 # ## Save Model for Future Use
 
-# In[70]:
+# In[ ]:
 
 
 import pickle
@@ -640,4 +473,10 @@ transformer_path="../models/transformer.pkl"
 # we need to save both the transformer -> to encode a document and the model itself to make predictions based on the weight vectors 
 pickle.dump(lr_final_model,open(model_path, 'wb'))
 pickle.dump(transformer,open(transformer_path,'wb'))
+
+
+# In[ ]:
+
+
+
 

@@ -7,6 +7,9 @@ import pickle
 #ML Packages
 from sklearn.feature_extraction.text import CountVectorizer
 
+#import python module
+from prediction import get_predictions
+
 app = Flask(__name__)
 Bootstrap(app)
 
@@ -28,7 +31,7 @@ def predict():
         namequery = request.form['namequery']
         data = [namequery]
         test_features = loaded_transformer.transform(data)
-        my_prediction = loaded_model.predict(test_features)
+        my_prediction = get_predictions(loaded_model,test_features)
     return render_template('results.html', prediction=my_prediction, name = namequery.upper())
 
 if __name__ == '__main__':
