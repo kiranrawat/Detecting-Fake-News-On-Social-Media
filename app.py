@@ -1,14 +1,11 @@
 #!flask/bin/python
-from flask import Flask, request, render_template, url_for
+from flask import Flask, request, render_template
 from flask_bootstrap import Bootstrap
-import pandas as pd
 import pickle
 
-#ML Packages
-from sklearn.feature_extraction.text import CountVectorizer
-
 #import python module
-from prediction import get_predictions
+from src.cleaning import process_text
+from src.prediction import get_predictions
 
 app = Flask(__name__)
 Bootstrap(app)
@@ -28,11 +25,14 @@ def index():
 def predict():
     # Collect the input and predict the outcome
     if request.method == 'POST':
+        # get input statement
         namequery = request.form['namequery']
         data = [namequery]
-        test_features = loaded_transformer.transform(data)
+        # get the clean data
+        clean_data = process_text(str(data))
+        test_features = loaded_transformer.transform([" ".join(clean_data)])
         my_prediction = get_predictions(loaded_model,test_features)
-    return render_template('results.html', prediction=my_prediction, name = namequery.upper())
+    return render_template('results.html', prediction=my_prediction, name = namequery)
 
 if __name__ == '__main__':
     app.run(debug=True)

@@ -41,14 +41,19 @@ https://arxiv.org/abs/1705.00648 [cs.CL]
 - Survey of fake news
 
 ### Libaries to install
+
 - `pip install -r requirements.txt`
 
+### If you want to train the best model
+
+- `python training.py`
+
 ### Run the Flask Application
-Start flask web server: `python app.py`
-The server will start on the address http://127.0.0.1:5000 [if port 5000 is not occupied]
+
+- Start flask web server: `python app.py`
+- The server will start on the address http://127.0.0.1:5000 [if port 5000 is not occupied]
 
 ### References
-
 - K Rapoza. 2017. Can âĂŸfake newsâĂŹ impact the stock market? (2017).
 - https://kavita-ganesan.com/news-classifier-with-logistic-regression-in-python/#.X7XeFBNKhQK
 

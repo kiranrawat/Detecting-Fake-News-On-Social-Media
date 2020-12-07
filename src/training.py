@@ -9,10 +9,13 @@ import pandas as pd
 import numpy as np
 import logging
 import re
+import pickle
 
+from sklearn.preprocessing import LabelEncoder
 from sklearn.feature_extraction.text import CountVectorizer,TfidfVectorizer
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report, confusion_matrix, f1_score
+from sklearn.linear_model import  LogisticRegression
 
 from cleaning import process_text
 
@@ -93,29 +96,29 @@ def train_model(classifier, train_val, field="statement",feature_rep="binary"):
 
 
 # Extract features for final training
-def extract_final_features(field,training_data,type):
+def extract_final_features(field,train_x,type):
     """Extract features using different methods"""
     logging.info("Extracting features and creating vocabulary...")
     
     if "binary" in type:
         # BINARY FEATURE REPRESENTATION
-        cv= CountVectorizer(binary=True, max_df=0.95)
-        cv.fit_transform(training_data.values)
-        train_feature_set=cv.transform(training_data.values)
+        cv= CountVectorizer(binary=True, max_df=0.95, analyzer=process_text)
+        cv.fit_transform(train_x)
+        train_feature_set=cv.transform(train_x)
         return train_feature_set,cv
   
     elif "counts" in type:
         # COUNT BASED FEATURE REPRESENTATION
-        cv= CountVectorizer(binary=False, max_df=0.95)
-        cv.fit_transform(training_data.values)
-        train_feature_set=cv.transform(training_data.values)
+        cv= CountVectorizer(binary=False, max_df=0.95, analyzer=process_text)
+        cv.fit_transform(train_x)
+        train_feature_set=cv.transform(train_x)
         return train_feature_set,cv
     
     else:    
         # TF-IDF BASED FEATURE REPRESENTATION
-        tfidf_vectorizer=TfidfVectorizer(use_idf=True, max_df=0.95)
-        tfidf_vectorizer.fit_transform(training_data.values)
-        train_feature_set=tfidf_vectorizer.transform(training_data.values)
+        tfidf_vectorizer=TfidfVectorizer(use_idf=True, max_df=0.95, analyzer=process_text)
+        tfidf_vectorizer.fit_transform(train_x)
+        train_feature_set=tfidf_vectorizer.transform(train_x)
         return train_feature_set,tfidf_vectorizer
 
 
@@ -126,7 +129,7 @@ def train_final_model(classifier, train_val, field="statement",feature_rep="bina
     """
     logging.info("Starting model training...")    
     # features
-    train_x=train_val['statement']
+    train_x=train_val['statement'].values
     # GET LABELS
     target=train_val['label'].values
     # GET FEATURES
@@ -138,3 +141,34 @@ def train_final_model(classifier, train_val, field="statement",feature_rep="bina
     logging.info("Done training.")
     
     return model,feature_transformer
+
+if __name__ == "__main__":
+
+    """
+    Training the best model
+    """
+    # load the processed data
+    train_news = pd.read_csv('../data/processed/train.csv').drop('len', axis=1)
+    val_news = pd.read_csv('../data/processed/val.csv')
+
+    # define the path for model and feature transformer
+    model_path="../models/lr_final_model.pkl"
+    transformer_path="../models/transformer.pkl"
+
+    #Merging the training and validation data together to train the final best model
+    labelEncoder = LabelEncoder()
+    frames = [train_news, val_news]
+    train_val = pd.concat(frames)
+    train_val['label'].value_counts()
+    train_val['label'] = labelEncoder.fit_transform(train_val['label'])
+
+    # training final model
+    field='statement'
+    LogR_clf_final = LogisticRegression(verbose=1, solver='liblinear',random_state=0, C=5, penalty='l2',max_iter=1000)
+    lr_final_model,transformer=train_final_model(LogR_clf_final,train_val,field=field,feature_rep='counts')
+    # save model
+    # we need to save both the transformer -> to encode a document and the model itself to make predictions based on the weight vectors 
+    pickle.dump(lr_final_model,open(model_path, 'wb'))
+    pickle.dump(transformer,open(transformer_path,'wb'))
+
+    print("best model saved in ", model_path)

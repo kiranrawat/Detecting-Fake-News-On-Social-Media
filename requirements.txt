@@ -7,3 +7,4 @@ nltk
 seaborn
 gensim
 scikit-optimize
+pyprojroot
