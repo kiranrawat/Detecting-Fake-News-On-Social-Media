@@ -28,8 +28,16 @@ training the model
 
 # Extracting Features
 def extract_features(field,training_data,testing_data,type):
-    """Extract features using different methods"""
-    
+    """
+    Extract features using different methods
+    Args: 
+        field (string): statement column    
+        training_data (pandas.core.frame.DataFrame): training data
+        testing_data (pandas.core.frame.DataFrame): test data
+        type (string): feature type
+    Returns:
+        train & test features and feature transformer
+    """
     logging.info("Extracting features and creating vocabulary...")
     
     if "binary" in type:
@@ -67,6 +75,13 @@ def extract_features(field,training_data,testing_data,type):
 def train_model(classifier, train_val, field="statement",feature_rep="binary"):
     """
     Training the classifier for the provided features.
+    Args: 
+        classifier (sklearn.linear_model): statement column  
+        train_val (pandas.core.frame.DataFrame): training data
+        field (string): test data
+        feature_rep (string): feature type
+    Returns:
+        model, feature transformer and f1-score
     """
     logging.info("Starting model training...")   
     # GET A TRAIN TEST SPLIT (set seed for consistent results)
@@ -97,7 +112,15 @@ def train_model(classifier, train_val, field="statement",feature_rep="binary"):
 
 # Extract features for final training
 def extract_final_features(field,train_x,type):
-    """Extract features using different methods"""
+    """
+    Extract features using different methods
+    Args: 
+        field (string): statement column  
+        training_data (pandas.core.frame.DataFrame): training data
+        type (string): feature type
+    Returns:
+        train features and feature transformer
+    """
     logging.info("Extracting features and creating vocabulary...")
     
     if "binary" in type:
@@ -126,6 +149,13 @@ def extract_final_features(field,train_x,type):
 def train_final_model(classifier, train_val, field="statement",feature_rep="binary"):
     """
     Training the best classifier on entire dataset for the provided features.
+    Args: 
+        classifier (sklearn.linear_model): statement column  
+        train_val (pandas.core.frame.DataFrame): training data
+        field (string): test data
+        feature_rep (string): feature type
+    Returns:
+        model, feature transformer
     """
     logging.info("Starting model training...")    
     # features
@@ -142,8 +172,8 @@ def train_final_model(classifier, train_val, field="statement",feature_rep="bina
     
     return model,feature_transformer
 
-if __name__ == "__main__":
 
+if __name__ == "__main__":
     """
     Training the best model
     """

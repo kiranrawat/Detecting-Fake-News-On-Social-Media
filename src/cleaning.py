@@ -12,35 +12,47 @@ from nltk.corpus import stopwords
 
 #distribution of classes for prediction
 def create_distribution(dataFile):
-    """ check the data distribution
+    """ 
+    check the data distribution
+    Args:
+        dataFile (dataframe): Pandas dataframe (train/test/val)
+    Returns:
+        Distribution Plot with label on x-axis
     """
     return sn.countplot(x='label', data=dataFile, palette='hls')
 
 # Cleaning text
 def process_text(text):
     """
-    What will be covered:
-    1. Lower case and remove special characters\whitespaces
-    1. Remove punctuation
-    2. Remove stopwords
-    3. Return list of clean text words
+    Cleaning the text
+    Args: 
+        text (string): news statement
+    Returns:
+        list of clean text words
     """
-    #1  
+    #1  remove special characters\whitespaces\digits
     text = re.sub(r'[^a-zA-Z\s]', '', text, re.I|re.A)
     
-    #2
+    #2 Remove punctuation
     nopunc = [char for char in text if char not in string.punctuation]
     nopunc = ''.join(nopunc)
     
-    #3
+    #3 Lower case & Remove stopwords
     clean_words = [word for word in nopunc.split() if word.lower() not in stopwords.words('english')]
     
-    #4
     return clean_words
 
-# Mapping the lables into 'True' and 'False'
+# Mapping the lables into 'True' and 'False' with dictionary
 def map_lables(train, test, val):
     """
+    Args: 
+        train (pandas.core.frame.DataFrame)): training data
+        test (pandas.core.frame.DataFrame)): test data
+        val (pandas.core.frame.DataFrame)): validation data
+    Returns:
+        label updated with either True or False
+
+    How mapping is done: 
     1. True -- True
     2. Mostly-true -- True
     3. Half-true -- True

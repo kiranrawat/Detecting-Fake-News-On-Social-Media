@@ -23,7 +23,11 @@ def index():
         
 @app.route('/predict', methods=['POST'])
 def predict():
-    # Collect the input and predict the outcome
+    """
+    Collect the input and predict the outcome
+    Returns:
+        Results.html with prediction
+    """
     if request.method == 'POST':
         # get input statement
         namequery = request.form['namequery']
