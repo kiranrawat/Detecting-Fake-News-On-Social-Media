@@ -44,7 +44,7 @@ https://arxiv.org/abs/1705.00648 [cs.CL]
 
 - `pip install -r requirements.txt`
 
-### If you want to train the best model
+### Train the best model
 
 - `python training.py`
 
