@@ -8,3 +8,4 @@ seaborn
 gensim
 scikit-optimize
 pyprojroot
+gensim

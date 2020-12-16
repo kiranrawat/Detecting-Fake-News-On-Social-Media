@@ -8,7 +8,11 @@ Created on Sat Nov 28 11:56:49 2020
 import seaborn as sn
 import re
 import string
+import nltk
 from nltk.corpus import stopwords
+from nltk.stem import WordNetLemmatizer 
+nltk.download('wordnet')
+lemmatizer = WordNetLemmatizer()
 
 #distribution of classes for prediction
 def create_distribution(dataFile):
@@ -40,7 +44,14 @@ def process_text(text):
     #3 Lower case & Remove stopwords
     clean_words = [word for word in nopunc.split() if word.lower() not in stopwords.words('english')]
     
-    return clean_words
+    #4 get lemmatized tokens
+    lemmatized_words = [lemmatizer.lemmatize(word) for word in clean_words if (len(word) > 2 and len(word) < 14)]
+
+    return lemmatized_words
+
+def process_text2(text):
+    text1 = " ".join(text)
+    return text1
 
 # Mapping the lables into 'True' and 'False' with dictionary
 def map_lables(train, test, val):
