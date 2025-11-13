@@ -35,12 +35,12 @@ def create_distribution(dataFile):
 def get_pos_tag(word):
     tag = nltk.pos_tag([word])[0][1][0].upper()
     pos_dict = {
-        'J': 'a',
-        'N': 'n',
-        'V': 'v',
-        'R': 'r'
+        'J': 'a',   # adjective
+        'N': 'n',   # noun
+        'V': 'v',   # verb
+        'R': 'r'    # adverb
     }
-    return pos_dict.get(tag, 'n')
+    return pos_dict.get(tag, 'n')  # default to noun
 
 
 # Cleaning text
@@ -50,20 +50,23 @@ def process_text(text):
     Clean a text string and return a list of tokens.
     Optimized and more linguistically correct version.
     """
-    # 1. lowercase
+    # lowercase
     text = text.lower()
 
-    # 2. keep only letters and whitespace
+    # keep only letters and whitespace
     text = re.sub(r"[^a-z\s]", " ", text)
 
-    # 3. tokenize (faster than split and safer)
+    # tokenize (split is fine because text is already cleaned)
     tokens = text.split()
 
-    # 4. remove stopwords
+    # remove stopwords
     tokens = [t for t in tokens if t not in STOPWORDS]
 
-    # 5. # POS-aware lemmatization
+    # POS-aware lemmatization
     tokens = [lemmatizer.lemmatize(t, get_pos_tag(t)) for t in tokens]
+
+    # remove very short tokens (optional but useful)
+    tokens = [t for t in tokens if len(t) > 2]
 
     return tokens
 
