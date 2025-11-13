@@ -2,7 +2,7 @@ Flask
 Flask-Bootstrap
 pandas
 numpy
-sklearn
+scikit-learn 
 nltk
 seaborn
 gensim
